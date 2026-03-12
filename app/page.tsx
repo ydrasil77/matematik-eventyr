@@ -145,7 +145,6 @@ export default function Page() {
       const accuracy = roundAttempts > 0 ? Math.round((roundCorrect / roundAttempts) * 100) : 0;
       m.totalAnswered = (m.totalAnswered ?? 0) + roundAttempts;
       m.totalCorrect = (m.totalCorrect ?? 0) + roundCorrect;
-      if (m.streak === undefined) m.streak = 0;
       if (accuracy === 100) m.bestStreak = Math.max(m.bestStreak ?? 0, roundCorrect);
 
       // Check for stage advancement
