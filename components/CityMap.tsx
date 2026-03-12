@@ -12,7 +12,6 @@ interface DungeonNode {
   y: string;
   available: boolean;
   desc: string;
-  floor?: number;
 }
 
 const CITY_X = "50%";
@@ -36,9 +35,22 @@ const TREE_DECO = [
   { x: "25%", y: "28%" }, { x: "72%", y: "20%" }, { x: "40%", y: "30%" },
 ];
 
+const ETAGE_MONSTER: Record<number, { emoji: string; name: string }> = {
+   1: { emoji: "🟢", name: "Grøn Slim" },      2: { emoji: "🦇", name: "Flagermus" },
+   3: { emoji: "💀", name: "Skelet" },          4: { emoji: "🐺", name: "Ulv" },
+   5: { emoji: "🧟", name: "Zombie" },          6: { emoji: "👹", name: "Trolden" },
+   7: { emoji: "🧌", name: "Kæmpen" },          8: { emoji: "🐲", name: "Drageunge" },
+   9: { emoji: "🐉", name: "Blå Drage" },      10: { emoji: "🧙", name: "Mørkets Troldmand" },
+  11: { emoji: "🧛", name: "Vampyr" },         12: { emoji: "☠️", name: "Liket" },
+  13: { emoji: "😈", name: "Dæmon" },          14: { emoji: "🦂", name: "Giftscorpion" },
+  15: { emoji: "👿", name: "Ældre Dæmon" },    16: { emoji: "🔮", name: "Sjæl-Troldkvinde" },
+  17: { emoji: "💀", name: "Arkylisk Lich" },  18: { emoji: "🌑", name: "Mørkets Vogter" },
+  19: { emoji: "⚡", name: "Stormlord" },       20: { emoji: "👑", name: "Lich-Kongen" },
+};
+
 interface Props {
   profile: Profile;
-  onEnterDungeon: (id: string) => void;
+  onEnterDungeon: (id: string, floor: number) => void;
   onHeroPanel: () => void;
   onSwitchProfile: () => void;
   onQuestBoard: () => void;
@@ -46,22 +58,25 @@ interface Props {
 
 export default function CityMap({ profile, onEnterDungeon, onHeroPanel, onSwitchProfile, onQuestBoard }: Props) {
   const [tooltip, setTooltip] = useState<string | null>(null);
+  const [showFloorPicker, setShowFloorPicker] = useState(false);
   const { speak } = useTTS();
   const title = getEarnedTitle(profile.mathDungeonFloor);
   const mount = MOUNTS.find((m) => m.id === profile.mountId) ?? MOUNTS[0];
+  const gold = profile.gold ?? 0;
+  const maxFloor = profile.mathDungeonFloor;
+  const dailyDone = (profile.dailyQuestDoneIds ?? []).length;
+  const dailyTotal = (profile.dailyQuestIds ?? []).length;
 
   const handleDungeon = (node: DungeonNode) => {
     if (node.available) {
-      speak(`Går ind i ${node.name}!`);
-      onEnterDungeon(node.id);
+      speak(`Vælg hvilken etage du vil kæmpe på!`);
+      setShowFloorPicker(true);
     } else {
       speak(`${node.name} er endnu ikke tilgængelig. Kom snart!`);
       setTooltip(node.id);
       setTimeout(() => setTooltip(null), 2200);
     }
   };
-
-  const mathNode = DUNGEON_NODES.find((d) => d.id === "math")!;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-950 via-green-900 to-slate-900 flex flex-col overflow-hidden">
@@ -72,28 +87,33 @@ export default function CityMap({ profile, onEnterDungeon, onHeroPanel, onSwitch
           className="text-white/70 text-3xl p-2 rounded-2xl bg-white/10 active:bg-white/20 select-none">
           👤
         </button>
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-4xl select-none">{profile.avatar}</span>
+            <span className="text-3xl select-none">{profile.avatar}</span>
             <span className="text-2xl select-none">{mount.emoji}</span>
-            <div>
-              <p className="text-white font-black text-xl leading-tight">{profile.name}</p>
-              <p className="text-yellow-300 text-base font-bold">{title.emoji} {title.label}</p>
+            <div className="min-w-0">
+              <p className="text-white font-black text-lg leading-tight truncate">{profile.name}</p>
+              <p className="text-yellow-300 text-sm font-bold">{title.emoji} {title.label}</p>
             </div>
           </div>
         </div>
-        <div className="text-right">
-          <p className="text-white/60 text-sm">Etage</p>
-          <p className="text-yellow-400 font-black text-2xl">{profile.mathDungeonFloor}/20</p>
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="bg-yellow-500/20 rounded-xl px-2 py-1">
+            <span className="text-yellow-300 font-black text-sm">💰 {gold}</span>
+          </div>
+          <div className="text-right">
+            <p className="text-white/50 text-xs">Etage</p>
+            <p className="text-yellow-400 font-black text-xl">{maxFloor}/20</p>
+          </div>
+          <button onPointerDown={() => speak(`Hej ${profile.name}! Etage ${maxFloor}. ${gold} guld. Vælg en dungeon!`)}
+            className="text-2xl p-2 rounded-2xl bg-white/10 active:bg-white/20 select-none text-white">
+            🔊
+          </button>
+          <button onPointerDown={onHeroPanel}
+            className="text-2xl p-2 rounded-2xl bg-yellow-500/20 active:bg-yellow-500/30 select-none text-yellow-300">
+            🧙
+          </button>
         </div>
-        <button onPointerDown={() => speak(`Hej ${profile.name}! Velkommen til Øvebyen! Vælg en dungeon for at starte et eventyr!`)}
-          className="text-3xl p-2 rounded-2xl bg-white/10 active:bg-white/20 select-none text-white">
-          🔊
-        </button>
-        <button onPointerDown={onHeroPanel}
-          className="text-3xl p-2 rounded-2xl bg-yellow-500/20 active:bg-yellow-500/30 select-none text-yellow-300">
-          🧙
-        </button>
       </div>
 
       {/* ── MAP AREA ── */}
@@ -107,13 +127,11 @@ export default function CityMap({ profile, onEnterDungeon, onHeroPanel, onSwitch
           </div>
         ))}
 
-        {/* Paths (SVG lines from city to each dungeon) */}
+        {/* Paths */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 1 }}>
           {DUNGEON_NODES.map((node) => (
-            <line
-              key={node.id}
-              x1={CITY_X} y1={CITY_Y}
-              x2={node.x} y2={node.y}
+            <line key={node.id}
+              x1={CITY_X} y1={CITY_Y} x2={node.x} y2={node.y}
               stroke={node.available ? "rgba(253,224,71,0.5)" : "rgba(255,255,255,0.12)"}
               strokeWidth={node.available ? "3" : "2"}
               strokeDasharray={node.available ? "0" : "8 6"}
@@ -137,10 +155,8 @@ export default function CityMap({ profile, onEnterDungeon, onHeroPanel, onSwitch
         {DUNGEON_NODES.map((node) => (
           <div key={node.id} className="absolute z-10"
             style={{ left: node.x, top: node.y, transform: "translate(-50%, -50%)" }}>
-            <button
-              onPointerDown={() => handleDungeon(node)}
-              className={`flex flex-col items-center group transition-transform active:scale-90 select-none`}
-            >
+            <button onPointerDown={() => handleDungeon(node)}
+              className="flex flex-col items-center group transition-transform active:scale-90 select-none">
               <div className={`relative rounded-3xl p-4 shadow-2xl border-2 ${
                 node.available
                   ? "bg-gradient-to-b from-amber-700 to-amber-900 border-yellow-400 shadow-yellow-600/50"
@@ -155,7 +171,7 @@ export default function CityMap({ profile, onEnterDungeon, onHeroPanel, onSwitch
                 {/* Math floor indicator */}
                 {node.id === "math" && (
                   <div className="absolute -top-2 -right-2 bg-purple-600 text-white text-xs font-black rounded-full w-7 h-7 flex items-center justify-center border-2 border-white">
-                    {profile.mathDungeonFloor}
+                    {maxFloor}
                   </div>
                 )}
                 {!node.available && (
@@ -194,18 +210,69 @@ export default function CityMap({ profile, onEnterDungeon, onHeroPanel, onSwitch
       {/* ── BOTTOM BAR ── */}
       <div className="flex gap-3 px-4 py-3 bg-black/40 border-t border-white/10">
         <button
-          onPointerDown={() => onEnterDungeon("math")}
+          onPointerDown={() => setShowFloorPicker(true)}
           className="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-black py-5 rounded-2xl text-xl shadow-xl active:scale-95 transition-transform select-none"
         >
           🧮 Ind i Dungeon! ⚔️
         </button>
         <button
           onPointerDown={onQuestBoard}
-          className="bg-white/10 border border-white/20 text-white font-bold px-5 py-5 rounded-2xl text-2xl active:bg-white/20 select-none"
+          className={`relative bg-white/10 border border-white/20 text-white font-bold px-5 py-5 rounded-2xl text-2xl active:bg-white/20 select-none ${dailyTotal > 0 ? "border-yellow-400/40" : ""}`}
         >
-          ⚔️
+          📜
+          {dailyTotal > 0 && dailyDone < dailyTotal && (
+            <span className="absolute -top-1.5 -right-1.5 bg-yellow-400 text-black text-xs font-black rounded-full w-5 h-5 flex items-center justify-center">
+              {dailyTotal - dailyDone}
+            </span>
+          )}
+          {dailyDone > 0 && dailyDone >= dailyTotal && (
+            <span className="absolute -top-1.5 -right-1.5 bg-green-400 text-black text-xs font-black rounded-full w-5 h-5 flex items-center justify-center">
+              ✓
+            </span>
+          )}
         </button>
       </div>
+
+      {/* ── FLOOR PICKER MODAL ── */}
+      {showFloorPicker && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm"
+          onPointerDown={(e) => { if (e.target === e.currentTarget) setShowFloorPicker(false); }}>
+          <div className="bg-slate-900 rounded-t-3xl w-full max-w-lg p-5 pb-8 animate-slide-up">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-white font-black text-2xl">🧮 Vælg etage</h2>
+              <button onPointerDown={() => setShowFloorPicker(false)}
+                className="text-white/50 text-3xl active:text-white select-none">✕</button>
+            </div>
+            <p className="text-white/50 text-sm mb-4">
+              Du har nået etage {maxFloor}. Vælg hvilken etage du vil kæmpe på:
+            </p>
+            <div className="grid grid-cols-4 gap-2 max-h-72 overflow-y-auto pr-1">
+              {Array.from({ length: 20 }, (_, i) => i + 1).map((floor) => {
+                const monster = ETAGE_MONSTER[floor] ?? { emoji: "👹", name: "Uhyre" };
+                const isMax = floor === maxFloor;
+                return (
+                  <button
+                    key={floor}
+                    onPointerDown={() => {
+                      setShowFloorPicker(false);
+                      onEnterDungeon("math", floor);
+                    }}
+                    className={`flex flex-col items-center p-2 rounded-2xl text-center transition-all active:scale-95 select-none ${
+                      isMax
+                        ? "bg-yellow-400/20 border-2 border-yellow-400 ring-2 ring-yellow-400/40"
+                        : "bg-white/10 active:bg-white/20 border border-white/10"
+                    }`}
+                  >
+                    <span className="text-2xl leading-none">{monster.emoji}</span>
+                    <span className="text-white font-black text-sm mt-1">E{floor}</span>
+                    {isMax && <span className="text-yellow-400 text-xs font-bold">Max</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

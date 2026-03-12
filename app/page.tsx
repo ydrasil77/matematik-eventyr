@@ -5,11 +5,23 @@ import CityMap from "@/components/CityMap";
 import MathGame from "@/components/MathGame";
 import HeroPanel from "@/components/HeroPanel";
 import QuestBoard from "@/components/QuestBoard";
-import type { Profile } from "@/lib/types";
+import type { Profile, MasteryTrackId } from "@/lib/types";
 import type { HeroClass } from "@/lib/types";
-import { ACHIEVEMENTS, getEarnedTitle, getUnlockedMounts, checkNewAchievements } from "@/lib/achievements";
+import { normaliseProfile, levelFromXP } from "@/lib/types";
+import { ACHIEVEMENTS, getEarnedTitle, checkNewAchievements } from "@/lib/achievements";
+import { LEVELS } from "@/lib/gameData";
+import { getQuestsForToday, MESTRINGS_STIER } from "@/lib/items";
 
 type AppView = "profiles" | "city" | "math-dungeon" | "hero-panel" | "quest-board";
+
+// Map level type → mastery track id
+const TYPE_TO_TRACK: Partial<Record<string, MasteryTrackId>> = {
+  addition: "plus",
+  subtraction: "minus",
+  multiplication: "gange",
+  division: "dele",
+  mixed: "blandet",
+};
 
 function AchievementToast({ achievements, onDone }: { achievements: typeof ACHIEVEMENTS; onDone: () => void }) {
   useEffect(() => {
@@ -39,65 +51,153 @@ export default function Page() {
   const [view, setView] = useState<AppView>("profiles");
   const [newAchievements, setNewAchievements] = useState<typeof ACHIEVEMENTS>([]);
   const [hydrated, setHydrated] = useState(false);
+  const [dungeonStartFloor, setDungeonStartFloor] = useState(1);
 
   useEffect(() => {
     fetch("/api/profiles")
       .then((r) => r.json())
-      .then((data) => { setProfiles(data); setHydrated(true); })
+      .then((data: Partial<Profile>[]) => {
+        const normalised = data.map((p) =>
+          normaliseProfile(p as Partial<Profile> & { id: string; name: string })
+        );
+        setProfiles(normalised);
+        setHydrated(true);
+      })
       .catch(() => setHydrated(true));
   }, []);
 
+  /** Refresh daily quests if the date has changed, then select the profile */
+  const selectProfile = (p: Profile) => {
+    const today = new Date().toISOString().split("T")[0];
+    const refreshed = normaliseProfile(p);
+    const newQuestIds = getQuestsForToday(refreshed.dailyQuestDate, refreshed.dailyQuestIds);
+    const dateChanged = refreshed.dailyQuestDate !== today;
+    if (dateChanged || refreshed.dailyQuestIds.length === 0) {
+      const updated: Profile = {
+        ...refreshed,
+        dailyQuestDate: today,
+        dailyQuestIds: newQuestIds,
+        dailyQuestDoneIds: dateChanged ? [] : refreshed.dailyQuestDoneIds,
+      };
+      updateProfile(updated);
+      setActiveProfile(updated);
+    } else {
+      setActiveProfile(refreshed);
+    }
+    setView("city");
+  };
+
   const addProfile = (name: string, avatar: string, heroClass: HeroClass) => {
-    const p: Profile = {
+    const today = new Date().toISOString().split("T")[0];
+    const questIds = getQuestsForToday("", []);
+    const p: Profile = normaliseProfile({
       id: Date.now().toString(),
-      name, avatar, heroClass,
-      mountId: "horse",
-      titleId: "elev",
-      achievementIds: [],
-      mathXP: 0,
-      mathDungeonFloor: 1,
+      name,
+      avatar,
+      heroClass,
+      dailyQuestDate: today,
+      dailyQuestIds: questIds,
       createdAt: new Date().toISOString(),
-    };
-    fetch("/api/profiles", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(p) })
-      .then(() => setProfiles((prev) => [...prev, p]));
+    });
+    fetch("/api/profiles", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(p),
+    }).then(() => setProfiles((prev) => [...prev, p]));
   };
 
   const updateProfile = (updated: Profile) => {
-    fetch("/api/profiles", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(updated) })
-      .then(() => {
-        setProfiles((prev) => prev.map((p) => p.id === updated.id ? updated : p));
-        if (activeProfile?.id === updated.id) setActiveProfile(updated);
-      });
+    fetch("/api/profiles", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updated),
+    }).then(() => {
+      setProfiles((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      if (activeProfile?.id === updated.id) setActiveProfile(updated);
+    });
   };
 
   const deleteProfile = (id: string) => {
-    fetch(`/api/profiles?id=${id}`, { method: "DELETE" })
-      .then(() => {
-        setProfiles((prev) => prev.filter((p) => p.id !== id));
-        if (activeProfile?.id === id) { setActiveProfile(null); setView("profiles"); }
-      });
+    fetch(`/api/profiles?id=${id}`, { method: "DELETE" }).then(() => {
+      setProfiles((prev) => prev.filter((p) => p.id !== id));
+      if (activeProfile?.id === id) {
+        setActiveProfile(null);
+        setView("profiles");
+      }
+    });
   };
 
-  const onFloorCleared = (floorId: number) => {
+  const onFloorCleared = (floorId: number, roundCorrect: number, roundAttempts: number) => {
     if (!activeProfile) return;
     const newFloor = Math.max(activeProfile.mathDungeonFloor, floorId + 1);
     const earnedXP = floorId * 50;
+    const earnedGold = floorId * 10;
     const newXP = activeProfile.mathXP + earnedXP;
-    // Check for new achievements
+    const newGold = (activeProfile.gold ?? 0) + earnedGold;
+    const newLevel = levelFromXP(newXP);
+
+    // Update mastery for the relevant operation type
+    const level = LEVELS.find((l) => l.id === floorId);
+    const trackId = level ? TYPE_TO_TRACK[level.type] ?? null : null;
+    let masteries = { ...activeProfile.masteries };
+    if (trackId && masteries[trackId] !== undefined) {
+      const m = { ...masteries[trackId] };
+      const accuracy = roundAttempts > 0 ? Math.round((roundCorrect / roundAttempts) * 100) : 0;
+      m.totalAnswered = (m.totalAnswered ?? 0) + roundAttempts;
+      m.totalCorrect = (m.totalCorrect ?? 0) + roundCorrect;
+      if (m.streak === undefined) m.streak = 0;
+      if (accuracy === 100) m.bestStreak = Math.max(m.bestStreak ?? 0, roundCorrect);
+
+      // Check for stage advancement
+      if (m.stage < 5) {
+        const sti = MESTRINGS_STIER.find((s) => s.id === trackId);
+        const nextTrin = sti?.trin.find((t) => t.trin === m.stage + 1);
+        if (nextTrin && m.totalCorrect >= nextTrin.rigtigeKrævet && accuracy >= nextTrin.nøjagtighedsKrævet) {
+          m.stage += 1;
+          m.totalCorrect = 0;
+          m.totalAnswered = 0;
+        }
+      }
+      masteries = { ...masteries, [trackId]: m };
+    }
+
+    // Check daily quest progress: floors cleared
+    const dailyQuestDoneIds = [...(activeProfile.dailyQuestDoneIds ?? [])];
+    const dailyQuestIds = activeProfile.dailyQuestIds ?? [];
+    for (const qid of dailyQuestIds) {
+      if (dailyQuestDoneIds.includes(qid)) continue;
+      if (qid === "dq-1etage" || qid === "dq-3etager") {
+        // Simple one-shot completion
+        dailyQuestDoneIds.push(qid);
+      }
+    }
+
+    // Check achievements
     const freshAchievements = checkNewAchievements(activeProfile.achievementIds, newFloor, newXP);
     const newAchievementIds = [...activeProfile.achievementIds, ...freshAchievements.map((a) => a.id)];
-    // Auto-update title and unlock mounts
     const earnedTitle = getEarnedTitle(newFloor);
+
     const updated: Profile = {
       ...activeProfile,
       mathXP: newXP,
+      level: newLevel,
+      gold: newGold,
       mathDungeonFloor: newFloor,
+      masteries,
       achievementIds: newAchievementIds,
       titleId: earnedTitle.id,
+      dailyQuestDoneIds,
     };
     updateProfile(updated);
     if (freshAchievements.length > 0) {
       setNewAchievements(freshAchievements);
+    }
+  };
+
+  const enterDungeon = (id: string, floor: number) => {
+    if (id === "math") {
+      setDungeonStartFloor(floor);
+      setView("math-dungeon");
     }
   };
 
@@ -118,7 +218,7 @@ export default function Page() {
       {(view === "profiles" || !activeProfile) && (
         <ProfileScreen
           profiles={profiles}
-          onSelect={(p) => { setActiveProfile(p); setView("city"); }}
+          onSelect={selectProfile}
           onAdd={addProfile}
           onDelete={deleteProfile}
         />
@@ -127,7 +227,7 @@ export default function Page() {
       {view === "city" && activeProfile && (
         <CityMap
           profile={activeProfile}
-          onEnterDungeon={(id) => { if (id === "math") setView("math-dungeon"); }}
+          onEnterDungeon={enterDungeon}
           onHeroPanel={() => setView("hero-panel")}
           onSwitchProfile={() => { setActiveProfile(null); setView("profiles"); }}
           onQuestBoard={() => setView("quest-board")}
@@ -138,7 +238,7 @@ export default function Page() {
         <MathGame
           profileId={activeProfile.id}
           playerName={activeProfile.name}
-          dungeonFloor={activeProfile.mathDungeonFloor}
+          dungeonFloor={dungeonStartFloor}
           dungeonMode={true}
           onFloorCleared={onFloorCleared}
           onBack={() => setView("city")}
@@ -159,6 +259,4 @@ export default function Page() {
           onBack={() => setView("city")}
         />
       )}
-    </>
-  );
 }

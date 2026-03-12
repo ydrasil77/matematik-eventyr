@@ -478,7 +478,7 @@ export function generateProblem(level: LevelConfig): Problem {
         : null;
       const scenarios = [
         `Du har ${a} ${o.p} ${o.e} og får ${b} mere. Hvor mange ${o.p} har du nu?`,
-        `Der er ${a} ${o.p} på bordet. ${b} more kommer til. Hvor mange er der nu?`,
+        `Der er ${a} ${o.p} på bordet. ${b} mere kommer til. Hvor mange er der nu?`,
         `Du samler ${a} ${o.p} og finder ${b} mere. Hvor mange har du i alt?`,
       ];
       return {

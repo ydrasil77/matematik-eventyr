@@ -94,7 +94,7 @@ const INITIAL: GameState = {
   totalCorrect: 0,
   roundCorrect: 0,
   roundAttempts: 0,
-  unlockedLevels: [1],
+  unlockedLevels: LEVELS.map((l) => l.id),
   earnedBadgeIds: [],
   problem: null,
   feedback: "idle",
@@ -1023,7 +1023,7 @@ interface MathGameProps {
   playerName?: string;
   dungeonFloor?: number;
   dungeonMode?: boolean;
-  onFloorCleared?: (floorId: number) => void;
+  onFloorCleared?: (floorId: number, roundCorrect: number, roundAttempts: number) => void;
   onBack?: () => void;
 }
 
@@ -1075,7 +1075,7 @@ export default function MathGame({
   // Notify parent when dungeon floor is cleared
   useEffect(() => {
     if (state.screen === "levelup" && dungeonMode && onFloorCleared) {
-      onFloorCleared(state.currentLevelId);
+      onFloorCleared(state.currentLevelId, state.roundCorrect, state.roundAttempts);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.screen]);
