@@ -11,6 +11,7 @@ import {
   type LevelConfig,
   type Problem,
 } from "@/lib/gameData";
+import { useTTS } from "@/lib/useTTS";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -261,11 +262,13 @@ function reducer(state: GameState, action: Action): GameState {
 
 // ─── Persistence ───────────────────────────────────────────────────────────────
 
-const SAVE_KEY = "matematik-eventyr-v3";
+function getSaveKey(pid?: string) {
+  return pid ? `matematik-eventyr-v4-${pid}` : "matematik-eventyr-v3";
+}
 
-function saveState(s: GameState) {
+function saveStateToStorage(s: GameState, pid?: string) {
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({
+    localStorage.setItem(getSaveKey(pid), JSON.stringify({
       playerName: s.playerName,
       currentLevelId: s.currentLevelId,
       xp: s.xp,
@@ -280,9 +283,9 @@ function saveState(s: GameState) {
   } catch {}
 }
 
-function loadState(): Partial<GameState> | null {
+function loadStateFromStorage(pid?: string): Partial<GameState> | null {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
+    const raw = localStorage.getItem(getSaveKey(pid));
     if (!raw) return null;
     return JSON.parse(raw) as Partial<GameState>;
   } catch {
@@ -627,10 +630,45 @@ function LevelMapScreen({ state, dispatch }: { state: GameState; dispatch: React
   );
 }
 
-function PlayingScreen({ state, dispatch }: { state: GameState; dispatch: React.Dispatch<Action> }) {
+// ─── Dungeon helpers ───────────────────────────────────────────────────────────
+
+const DUNGEON_MONSTERS: Record<number, { emoji: string; name: string }> = {
+   1: { emoji: "🟢", name: "Grøn Slim" },     2: { emoji: "🦇", name: "Flagermus" },
+   3: { emoji: "💀", name: "Skelet" },         4: { emoji: "🐺", name: "Ulv" },
+   5: { emoji: "🧟", name: "Zombie" },         6: { emoji: "👹", name: "Trolden" },
+   7: { emoji: "🧌", name: "Kæmpen" },         8: { emoji: "🐲", name: "Drageunge" },
+   9: { emoji: "🐉", name: "Blå Drage" },     10: { emoji: "🧙", name: "Mørkets Troldmand" },
+  11: { emoji: "🧛", name: "Vampyr" },        12: { emoji: "☠️", name: "Liket" },
+  13: { emoji: "😈", name: "Dæmon" },         14: { emoji: "🦂", name: "Giftscorpion" },
+  15: { emoji: "👿", name: "Ældre Dæmon" },   16: { emoji: "🔮", name: "Sjæl-Troldkvinde" },
+  17: { emoji: "💀", name: "Arkylisk Lich" }, 18: { emoji: "🌑", name: "Mørkets Vogter" },
+  19: { emoji: "⚡", name: "Stormlord" },      20: { emoji: "👑", name: "Lich-Kongen" },
+};
+
+function getAltExplanation(problem: Problem): string {
+  const q = problem.question;
+  if (q.includes("+")) return "🧺 Forestil dig to kurve med legetøj. Tæl alt legetøjet fra begge kurve!";
+  if (q.includes("−") || q.includes("-")) return "🍭 Du har en pose slik. Nogen tager noget. Tæl hvad der er tilbage!";
+  if (q.includes("·") || q.includes("×")) return "🍪 Forestil dig rækker med kager. Tæl alle kagerne i alle rækkerne!";
+  if (q.includes("÷") || q.includes("/")) return "🍕 Del pizzaen ligeligt. Hvor mange stykker får hver person?";
+  if (q.includes("²")) return "⬜ Et kvadrat: gange sidens længde med sig selv!";
+  if (q.includes("√")) return "🔲 Hvad ganget med sig selv giver dette tal?";
+  return "✏️ Prøv at tegne problemet på papir med cirkler og streger!";
+}
+
+function PlayingScreen({ state, dispatch, dungeonMode, onBack }: { state: GameState; dispatch: React.Dispatch<Action>; dungeonMode?: boolean; onBack?: () => void }) {
   const level = getLevel(state.currentLevelId);
   const { problem, feedback } = state;
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [showAlt, setShowAlt] = useState(false);
+  const { speak } = useTTS();
+  const monster = dungeonMode ? (DUNGEON_MONSTERS[state.currentLevelId] ?? { emoji: "👹", name: "Uhyret" }) : null;
+  const monsterHpPct = dungeonMode
+    ? Math.max(0, ((level.questionsPerRound - state.roundCorrect) / level.questionsPerRound) * 100)
+    : 0;
+
+  // Reset alt explanation on new question
+  useEffect(() => { setShowAlt(false); }, [problem]);
 
   // Countdown timer
   useEffect(() => {
@@ -667,10 +705,10 @@ function PlayingScreen({ state, dispatch }: { state: GameState; dispatch: React.
       {/* Top bar */}
       <div className="flex items-center justify-between mb-3 gap-2">
         <button
-          onPointerDown={() => dispatch({ type: "GO_HOME" })}
-          className="bg-white/20 backdrop-blur text-white font-bold px-4 py-3 rounded-xl active:bg-white/30 text-sm select-none"
+          onPointerDown={() => dungeonMode && onBack ? onBack() : dispatch({ type: "GO_HOME" })}
+          className="bg-white/20 backdrop-blur text-white font-bold px-4 py-3 rounded-xl active:bg-white/30 text-base select-none"
         >
-          ← Hjem
+          {dungeonMode ? "← By" : "← Hjem"}
         </button>
         <div className="flex items-center gap-2">
           <div className="bg-white/20 backdrop-blur rounded-xl px-3 py-2 flex items-center gap-1 select-none">
@@ -707,6 +745,23 @@ function PlayingScreen({ state, dispatch }: { state: GameState; dispatch: React.
       {/* Timer bar (timed practice) */}
       {state.timerEnabled && <TimerBar timeLeft={state.timeLeft} />}
 
+      {/* Dungeon monster HP bar */}
+      {monster && (
+        <div className="mb-3 bg-black/40 rounded-3xl p-4 flex items-center gap-4">
+          <div className={`text-7xl select-none ${feedback === "correct" ? "animate-shake" : "animate-float"}`}>
+            {monster.emoji}
+          </div>
+          <div className="flex-1">
+            <p className="text-white font-black text-xl">{monster.name}</p>
+            <p className="text-white/50 text-sm mb-2">❤️ {level.questionsPerRound - state.roundCorrect}/{level.questionsPerRound}</p>
+            <div className="h-5 bg-black/30 rounded-full overflow-hidden">
+              <div className="h-full bg-red-500 rounded-full transition-all duration-700"
+                style={{ width: `${monsterHpPct}%` }} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Problem card */}
       <div
         className={`bg-white rounded-3xl p-5 shadow-2xl mb-4 flex-1 flex flex-col ${level.cardBg} ${
@@ -718,7 +773,11 @@ function PlayingScreen({ state, dispatch }: { state: GameState; dispatch: React.
         }`}
       >
         {/* Scenario (real-world context) */}
-        <p className="text-gray-600 text-base leading-relaxed mb-3">{problem.scenario}</p>
+        <div className="flex items-start gap-2 mb-3">
+          <p className="text-gray-600 text-lg leading-relaxed flex-1">{problem.scenario}</p>
+          <button onPointerDown={() => speak(problem.scenario)}
+            className="text-3xl select-none active:scale-90 flex-shrink-0">🔊</button>
+        </div>
 
         {/* Visual aid – emoji grid */}
         {problem.visual && <VisualAid visual={problem.visual} />}
@@ -729,10 +788,12 @@ function PlayingScreen({ state, dispatch }: { state: GameState; dispatch: React.
         )}
 
         {/* Main question */}
-        <div className="text-center my-4 flex-1 flex items-center justify-center">
-          <span className="text-4xl sm:text-5xl font-black text-gray-800 tracking-tight math-display select-none">
+        <div className="text-center my-4 flex-1 flex items-center justify-center gap-4">
+          <span className="text-5xl sm:text-7xl font-black text-gray-800 tracking-tight math-display select-none">
             {problem.question}
           </span>
+          <button onPointerDown={() => speak(problem.question)}
+            className="text-4xl select-none active:scale-90 flex-shrink-0">🔊</button>
         </div>
 
         {/* Correct feedback */}
@@ -748,9 +809,19 @@ function PlayingScreen({ state, dispatch }: { state: GameState; dispatch: React.
               </div>
             )}
             {/* Error analysis / explanation always shown */}
-            <div className="bg-green-50 border border-green-200 rounded-2xl p-3 text-green-800 text-sm animate-slide-up">
+            <div className="bg-green-50 border border-green-200 rounded-2xl p-3 text-green-800 text-base animate-slide-up">
               <span className="font-bold">✅ Forklaring: </span>{problem.explanation}
             </div>
+            {/* Alternative explanation button */}
+            <button onPointerDown={() => { setShowAlt((v) => !v); speak(showAlt ? problem.explanation : getAltExplanation(problem)); }}
+              className="w-full text-blue-600 bg-blue-50 border border-blue-200 rounded-2xl py-3 text-base font-bold select-none active:bg-blue-100">
+              {showAlt ? "📖 Vis normal forklaring" : "🤔 Forklar på en anden måde"}
+            </button>
+            {showAlt && (
+              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-3 text-blue-800 text-base animate-slide-up">
+                {getAltExplanation(problem)}
+              </div>
+            )}
           </div>
         )}
 
@@ -787,7 +858,7 @@ function PlayingScreen({ state, dispatch }: { state: GameState; dispatch: React.
 
       {/* Answer buttons or Next */}
       {feedback !== "correct" ? (
-        <>
+        <>6 rounded-2xl text-2xl sm:text-3
           <div className="grid grid-cols-2 gap-3 mb-2">
             {problem.options.map((opt, i) => {
               const optStr = String(opt);
@@ -798,7 +869,7 @@ function PlayingScreen({ state, dispatch }: { state: GameState; dispatch: React.
                   disabled={os === "wrong" || os === "correct"}
                   onPointerDown={() => { if (os === "default") dispatch({ type: "ANSWER", option: optStr }); }}
                   className={`py-5 rounded-2xl text-xl font-black transition-all select-none ${optionClass(optStr)}`}
-                >
+                >80 text-base py-4
                   {os === "wrong" ? "✗ " : ""}{optStr}
                 </button>
               );
@@ -833,7 +904,7 @@ function PlayingScreen({ state, dispatch }: { state: GameState; dispatch: React.
   );
 }
 
-function LevelUpScreen({ state, dispatch }: { state: GameState; dispatch: React.Dispatch<Action> }) {
+function LevelUpScreen({ state, dispatch, dungeonMode, onBack }: { state: GameState; dispatch: React.Dispatch<Action>; dungeonMode?: boolean; onBack?: () => void }) {
   const level = getLevel(state.currentLevelId);
   const nextLevel = LEVELS.find((l) => l.id === state.currentLevelId + 1);
   const newBadge = BADGES.find((b) => state.earnedBadgeIds.includes(b.id));
@@ -932,10 +1003,10 @@ function LevelUpScreen({ state, dispatch }: { state: GameState; dispatch: React.
           </button>
         )}
         <button
-          onPointerDown={() => dispatch({ type: "FINISH_LEVELUP" })}
+          onPointerDown={() => { dispatch({ type: "FINISH_LEVELUP" }); if (dungeonMode && onBack) onBack(); }}
           className="w-full bg-white/20 backdrop-blur text-white font-bold py-4 rounded-2xl text-lg active:bg-white/30 select-none"
         >
-          🏠 Hjem
+          {dungeonMode ? "🏰 Tilbage til Byen" : "🏠 Hjem"}
         </button>
       </div>
     </div>
@@ -944,26 +1015,75 @@ function LevelUpScreen({ state, dispatch }: { state: GameState; dispatch: React.
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
-export default function MathGame() {
+
+// ─── Main Component ────────────────────────────────────────────────────────────
+
+interface MathGameProps {
+  profileId?: string;
+  playerName?: string;
+  dungeonFloor?: number;
+  dungeonMode?: boolean;
+  onFloorCleared?: (floorId: number) => void;
+  onBack?: () => void;
+}
+
+export default function MathGame({
+  profileId,
+  playerName: propPlayerName,
+  dungeonFloor,
+  dungeonMode,
+  onFloorCleared,
+  onBack,
+}: MathGameProps = {}) {
   const [state, dispatch] = useReducer(reducer, INITIAL);
   const [hydrated, setHydrated] = useState(false);
 
-  // Load saved state on mount
+  // Load saved state (or initialize dungeon mode) on mount
   useEffect(() => {
-    const saved = loadState();
-    if (saved && saved.playerName) {
+    if (dungeonMode && propPlayerName) {
+      const saved = loadStateFromStorage(profileId);
+      const startFloor = dungeonFloor ?? saved?.currentLevelId ?? 1;
+      const level = getLevel(startFloor);
       dispatch({
         type: "LOAD",
-        state: { ...saved, screen: "home" as Screen },
+        state: {
+          ...(saved || {}),
+          screen: "playing" as Screen,
+          playerName: propPlayerName,
+          currentLevelId: startFloor,
+          problem: generateProblem(level),
+          feedback: "idle",
+          wrongOptions: [],
+          wrongAttempts: 0,
+          hintLevel: 0,
+          timeLeft: TIMER_SECONDS,
+          xpGained: 0,
+          roundCorrect: 0,
+          roundAttempts: 0,
+        },
       });
+    } else {
+      const saved = loadStateFromStorage(profileId);
+      if (saved && saved.playerName) {
+        dispatch({ type: "LOAD", state: { ...saved, screen: "home" as Screen } });
+      }
     }
     setHydrated(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Notify parent when dungeon floor is cleared
+  useEffect(() => {
+    if (state.screen === "levelup" && dungeonMode && onFloorCleared) {
+      onFloorCleared(state.currentLevelId);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.screen]);
 
   // Persist on every state change
   useEffect(() => {
     if (hydrated && state.playerName) {
-      saveState(state);
+      saveStateToStorage(state, profileId);
     }
   }, [state, hydrated]);
 
@@ -983,9 +1103,9 @@ export default function MathGame() {
     case "map":
       return <LevelMapScreen state={state} dispatch={dispatch} />;
     case "playing":
-      return <PlayingScreen state={state} dispatch={dispatch} />;
+      return <PlayingScreen state={state} dispatch={dispatch} dungeonMode={dungeonMode} onBack={onBack} />;
     case "levelup":
-      return <LevelUpScreen state={state} dispatch={dispatch} />;
+      return <LevelUpScreen state={state} dispatch={dispatch} dungeonMode={dungeonMode} onBack={onBack} />;
     default:
       return <SetupScreen dispatch={dispatch} />;
   }
