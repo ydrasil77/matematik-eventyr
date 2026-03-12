@@ -259,4 +259,6 @@ export default function Page() {
           onBack={() => setView("city")}
         />
       )}
+    </>
+  );
 }
