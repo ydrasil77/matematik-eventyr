@@ -858,7 +858,7 @@ function PlayingScreen({ state, dispatch, dungeonMode, onBack }: { state: GameSt
 
       {/* Answer buttons or Next */}
       {feedback !== "correct" ? (
-        <>6 rounded-2xl text-2xl sm:text-3
+        <>
           <div className="grid grid-cols-2 gap-3 mb-2">
             {problem.options.map((opt, i) => {
               const optStr = String(opt);
@@ -868,8 +868,8 @@ function PlayingScreen({ state, dispatch, dungeonMode, onBack }: { state: GameSt
                   key={i}
                   disabled={os === "wrong" || os === "correct"}
                   onPointerDown={() => { if (os === "default") dispatch({ type: "ANSWER", option: optStr }); }}
-                  className={`py-5 rounded-2xl text-xl font-black transition-all select-none ${optionClass(optStr)}`}
-                >80 text-base py-4
+                  className={`py-6 rounded-2xl text-2xl sm:text-3xl font-black transition-all select-none ${optionClass(optStr)}`}
+                >
                   {os === "wrong" ? "✗ " : ""}{optStr}
                 </button>
               );
