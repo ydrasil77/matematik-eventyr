@@ -6,9 +6,18 @@ export const metadata: Metadata = {
   description:
     "Et sjovt og motiverende matematik-spil for danske elever fra 1. klasse til videregående uddannelse. Lær addition, subtraktion, algebra og kalkulus med belønninger og rigtige eksempler!",
   keywords: ["matematik", "spil", "lær", "dansk", "skole", "addition", "subtraktion"],
-  icons: { icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧮</text></svg>" },
+  manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/icons/icon-152.png",
+  },
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "MathQuest" },
+  applicationName: "MathQuest",
 };
+
 
 export const viewport: Viewport = {
   width: "device-width",

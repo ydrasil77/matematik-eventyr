@@ -9,7 +9,6 @@ import type { Profile } from "@/lib/types";
 import type { HeroClass } from "@/lib/types";
 import { ACHIEVEMENTS, getEarnedTitle, getUnlockedMounts, checkNewAchievements } from "@/lib/achievements";
 
-const PROFILES_KEY = "ovebog-profiles-v1";
 type AppView = "profiles" | "city" | "math-dungeon" | "hero-panel" | "quest-board";
 
 function AchievementToast({ achievements, onDone }: { achievements: typeof ACHIEVEMENTS; onDone: () => void }) {
@@ -42,17 +41,11 @@ export default function Page() {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(PROFILES_KEY);
-      if (raw) setProfiles(JSON.parse(raw));
-    } catch {}
-    setHydrated(true);
+    fetch("/api/profiles")
+      .then((r) => r.json())
+      .then((data) => { setProfiles(data); setHydrated(true); })
+      .catch(() => setHydrated(true));
   }, []);
-
-  const saveProfiles = (ps: Profile[]) => {
-    setProfiles(ps);
-    try { localStorage.setItem(PROFILES_KEY, JSON.stringify(ps)); } catch {}
-  };
 
   const addProfile = (name: string, avatar: string, heroClass: HeroClass) => {
     const p: Profile = {
@@ -65,17 +58,24 @@ export default function Page() {
       mathDungeonFloor: 1,
       createdAt: new Date().toISOString(),
     };
-    saveProfiles([...profiles, p]);
+    fetch("/api/profiles", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(p) })
+      .then(() => setProfiles((prev) => [...prev, p]));
   };
 
   const updateProfile = (updated: Profile) => {
-    saveProfiles(profiles.map((p) => p.id === updated.id ? updated : p));
-    if (activeProfile?.id === updated.id) setActiveProfile(updated);
+    fetch("/api/profiles", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(updated) })
+      .then(() => {
+        setProfiles((prev) => prev.map((p) => p.id === updated.id ? updated : p));
+        if (activeProfile?.id === updated.id) setActiveProfile(updated);
+      });
   };
 
   const deleteProfile = (id: string) => {
-    saveProfiles(profiles.filter((p) => p.id !== id));
-    if (activeProfile?.id === id) { setActiveProfile(null); setView("profiles"); }
+    fetch(`/api/profiles?id=${id}`, { method: "DELETE" })
+      .then(() => {
+        setProfiles((prev) => prev.filter((p) => p.id !== id));
+        if (activeProfile?.id === id) { setActiveProfile(null); setView("profiles"); }
+      });
   };
 
   const onFloorCleared = (floorId: number) => {
