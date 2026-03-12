@@ -78,18 +78,13 @@ export function normaliseProfile(p: Partial<Profile> & { id: string; name: strin
     itemIds: [],
     equippedItems: {},
     openedChestIds: [],
-    masteries: { ...DEFAULT_MASTERIES },
     dailyQuestDate: "",
     dailyQuestIds: [],
     dailyQuestDoneIds: [],
     completedQuestIds: [],
     createdAt: new Date().toISOString(),
     ...p,
-    // Ensure masteries object has all keys even if some are missing
-    masteries: {
-      ...DEFAULT_MASTERIES,
-      ...(p.masteries ?? {}),
-    },
+    masteries: { ...DEFAULT_MASTERIES, ...(p.masteries ?? {}) },
   } as Profile;
 }
 
