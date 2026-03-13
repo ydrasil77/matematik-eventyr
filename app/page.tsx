@@ -14,6 +14,30 @@ import { ACHIEVEMENTS, getEarnedTitle, checkNewAchievements } from "@/lib/achiev
 import { LEVELS } from "@/lib/gameData";
 import { getQuestsForToday, MESTRINGS_STIER } from "@/lib/items";
 
+// ─── Local storage persistence (works on Vercel / any static host) ────────────
+const PROFILES_KEY = "matematik_profiles_v1";
+
+function loadProfiles(): Profile[] {
+  try {
+    if (typeof window === "undefined") return [];
+    const raw = localStorage.getItem(PROFILES_KEY);
+    if (!raw) return [];
+    return (JSON.parse(raw) as Partial<Profile>[]).map((p) =>
+      normaliseProfile(p as Partial<Profile> & { id: string; name: string })
+    );
+  } catch {
+    return [];
+  }
+}
+
+function saveProfiles(profiles: Profile[]): void {
+  try {
+    localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
+  } catch {
+    // Storage might be full or unavailable — fail silently
+  }
+}
+
 type AppView = "profiles" | "city" | "math-dungeon" | "subject-dungeon" | "hero-panel" | "quest-board";
 
 // Map level type → mastery track id
@@ -58,16 +82,8 @@ export default function Page() {
   const [subjectStartFloor, setSubjectStartFloor] = useState(1);
 
   useEffect(() => {
-    fetch("/api/profiles")
-      .then((r) => r.json())
-      .then((data: Partial<Profile>[]) => {
-        const normalised = data.map((p) =>
-          normaliseProfile(p as Partial<Profile> & { id: string; name: string })
-        );
-        setProfiles(normalised);
-        setHydrated(true);
-      })
-      .catch(() => setHydrated(true));
+    setProfiles(loadProfiles());
+    setHydrated(true);
   }, []);
 
   /** Refresh daily quests if the date has changed, then select the profile */
@@ -103,32 +119,30 @@ export default function Page() {
       dailyQuestIds: questIds,
       createdAt: new Date().toISOString(),
     });
-    fetch("/api/profiles", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(p),
-    }).then(() => setProfiles((prev) => [...prev, p]));
+    const updated = [...profiles, p];
+    saveProfiles(updated);
+    setProfiles(updated);
   };
 
   const updateProfile = (updated: Profile) => {
-    fetch("/api/profiles", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updated),
-    }).then(() => {
-      setProfiles((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-      if (activeProfile?.id === updated.id) setActiveProfile(updated);
+    setProfiles((prev) => {
+      const next = prev.map((p) => (p.id === updated.id ? updated : p));
+      saveProfiles(next);
+      return next;
     });
+    if (activeProfile?.id === updated.id) setActiveProfile(updated);
   };
 
   const deleteProfile = (id: string) => {
-    fetch(`/api/profiles?id=${id}`, { method: "DELETE" }).then(() => {
-      setProfiles((prev) => prev.filter((p) => p.id !== id));
-      if (activeProfile?.id === id) {
-        setActiveProfile(null);
-        setView("profiles");
-      }
+    setProfiles((prev) => {
+      const next = prev.filter((p) => p.id !== id);
+      saveProfiles(next);
+      return next;
     });
+    if (activeProfile?.id === id) {
+      setActiveProfile(null);
+      setView("profiles");
+    }
   };
 
   const onFloorCleared = (floorId: number, roundCorrect: number, roundAttempts: number) => {
@@ -210,7 +224,7 @@ export default function Page() {
 
   if (!hydrated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-purple-950 flex items-center justify-center">
+      <div className="h-dvh bg-gradient-to-br from-slate-900 to-purple-950 flex items-center justify-center">
         <div className="text-9xl animate-bounce select-none">🏰</div>
       </div>
     );
