@@ -107,7 +107,7 @@ export default function Page() {
     setView("city");
   };
 
-  const addProfile = (name: string, avatar: string, heroClass: HeroClass) => {
+  const addProfile = (name: string, avatar: string, heroClass: HeroClass, pin: string) => {
     const today = new Date().toISOString().split("T")[0];
     const questIds = getQuestsForToday("", []);
     const p: Profile = normaliseProfile({
@@ -115,6 +115,7 @@ export default function Page() {
       name,
       avatar,
       heroClass,
+      pin,
       dailyQuestDate: today,
       dailyQuestIds: questIds,
       createdAt: new Date().toISOString(),

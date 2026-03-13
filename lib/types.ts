@@ -53,6 +53,7 @@ export interface Profile {
   completedQuestIds: string[];   // All-time completed quest IDs
 
   createdAt: string;
+  pin: string;
 }
 
 export const DEFAULT_MASTERIES: MasteriesMap = {
@@ -85,6 +86,7 @@ export function normaliseProfile(p: Partial<Profile> & { id: string; name: strin
     dailyQuestDoneIds: [],
     completedQuestIds: [],
     createdAt: new Date().toISOString(),
+    pin: "",
     ...p,
     masteries: { ...DEFAULT_MASTERIES, ...(p.masteries ?? {}) },
   } as Profile;
