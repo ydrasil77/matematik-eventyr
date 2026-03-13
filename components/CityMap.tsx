@@ -72,7 +72,7 @@ export default function CityMap({ profile, onEnterDungeon, onHeroPanel, onSwitch
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-950 via-green-900 to-slate-900 flex flex-col overflow-hidden">
+    <div className="h-dvh bg-gradient-to-b from-green-950 via-green-900 to-slate-900 flex flex-col overflow-hidden">
 
       {/* ── TOP BAR ── */}
       <div className="flex items-center gap-3 px-4 py-3 bg-black/40 border-b border-white/10 z-10">
@@ -110,7 +110,7 @@ export default function CityMap({ profile, onEnterDungeon, onHeroPanel, onSwitch
       </div>
 
       {/* ── MAP AREA ── */}
-      <div className="flex-1 relative overflow-hidden" style={{ minHeight: 420 }}>
+      <div className="flex-1 min-h-0 relative overflow-hidden">
 
         {/* Decorative trees */}
         {TREE_DECO.map((t, i) => (
@@ -183,10 +183,10 @@ export default function CityMap({ profile, onEnterDungeon, onHeroPanel, onSwitch
       </div>
 
       {/* ── BOTTOM BAR ── */}
-      <div className="flex gap-3 px-4 py-3 bg-black/40 border-t border-white/10">
+      <div className="flex gap-3 px-4 py-3 bg-black/40 border-t border-white/10 flex-shrink-0">
         <button
           onPointerDown={() => setPickerNode(DUNGEON_NODES.find((n) => n.id === "math") ?? DUNGEON_NODES[0])}
-          className="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-black py-5 rounded-2xl text-xl shadow-xl active:scale-95 transition-transform select-none"
+          className="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-black py-4 rounded-2xl text-lg shadow-xl active:scale-95 transition-transform select-none"
         >
           🧮 Ind i Dungeon! ⚔️
         </button>

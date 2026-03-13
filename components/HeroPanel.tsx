@@ -64,7 +64,7 @@ export default function HeroPanel({ profile, onUpdate, onBack }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-purple-950 flex flex-col">
+    <div className="h-dvh bg-gradient-to-b from-slate-900 to-purple-950 flex flex-col overflow-hidden">
 
       {/* ── HEADER ── */}
       <div className="flex items-center gap-3 px-5 pt-5 pb-4">
@@ -133,7 +133,7 @@ export default function HeroPanel({ profile, onUpdate, onBack }: Props) {
       </div>
 
       {/* ── TAB CONTENT ── */}
-      <div className="flex-1 overflow-y-auto px-4 pb-8 space-y-3">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-8 space-y-3">
 
         {/* ━━━━━━ OVERSIGT ━━━━━━ */}
         {tab === "oversigt" && (

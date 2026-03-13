@@ -15,12 +15,17 @@ html {
   scroll-behavior: smooth;
   /* Prevent pull-to-refresh and overscroll glow */
   overscroll-behavior: none;
+  /* Establish full-height root so h-dvh works correctly */
+  height: 100%;
 }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   overscroll-behavior: none;
   user-select: none;
+  /* Fill the viewport exactly — no page-level scroll */
+  height: 100%;
+  overflow: hidden;
   /* Respect device safe areas (notch / home bar) */
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);

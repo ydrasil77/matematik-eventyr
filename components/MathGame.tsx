@@ -439,13 +439,13 @@ function SetupScreen({ dispatch }: { dispatch: React.Dispatch<Action> }) {
   const [name, setName] = useState("");
   const submit = () => name.trim() && dispatch({ type: "SET_NAME", name: name.trim() });
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-indigo-400 via-purple-500 to-pink-500 p-6">
-      <div className="animate-bounce-in text-center mb-8">
-        <div className="text-8xl mb-4 animate-float select-none">🧮</div>
-        <h1 className="text-5xl font-black text-white drop-shadow-lg">MathQuest</h1>
-        <p className="text-xl text-white/80 mt-2">Fra 1. klasse til universitetet! 🚀</p>
+    <div className="h-dvh flex flex-col items-center justify-center bg-gradient-to-br from-indigo-400 via-purple-500 to-pink-500 p-5 overflow-hidden">
+      <div className="animate-bounce-in text-center mb-4">
+        <div className="text-6xl mb-2 animate-float select-none">🧮</div>
+        <h1 className="text-3xl font-black text-white drop-shadow-lg">MathQuest</h1>
+        <p className="text-lg text-white/80 mt-1">Fra 1. klasse til universitetet! 🚀</p>
       </div>
-      <div className="bg-white rounded-3xl p-8 shadow-2xl w-full max-w-sm animate-slide-up">
+      <div className="bg-white rounded-3xl p-5 shadow-2xl w-full max-w-sm animate-slide-up">
         <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">Hvad hedder du? 👋</h2>
         <p className="text-gray-500 text-center text-sm mb-1">Dit navn gemmes til din fremgang</p>
         <p className="text-purple-500 text-center text-xs mb-6 italic">
@@ -464,7 +464,7 @@ function SetupScreen({ dispatch }: { dispatch: React.Dispatch<Action> }) {
         <button
           onPointerDown={submit}
           disabled={!name.trim()}
-          className="mt-4 w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-5 rounded-2xl text-xl shadow-lg disabled:opacity-40 transition-transform active:scale-95 select-none"
+          className="mt-4 w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-4 rounded-2xl text-lg shadow-lg disabled:opacity-40 transition-transform active:scale-95 select-none"
         >
           Start eventyret! 🎯
         </button>
@@ -479,9 +479,9 @@ function HomeScreen({ state, dispatch }: { state: GameState; dispatch: React.Dis
   const isReturning = state.lastPlayedDate !== "" && state.lastPlayedDate !== today;
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${level.gradient} flex flex-col p-4 sm:p-6`}>
+    <div className={`h-dvh bg-gradient-to-br ${level.gradient} flex flex-col p-4 overflow-hidden`}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-4 gap-2">
+      <div className="flex items-center justify-between mb-2 gap-2 flex-shrink-0">
         <div className="bg-white/20 backdrop-blur rounded-2xl px-4 py-2">
           <span className="text-white font-bold select-none">👤 {state.playerName}</span>
         </div>
@@ -497,9 +497,10 @@ function HomeScreen({ state, dispatch }: { state: GameState; dispatch: React.Dis
         </div>
       </div>
 
+      <div className="flex-1 min-h-0 overflow-y-auto">
       {/* Returning user welcome (distributed practice) */}
       {isReturning && (
-        <div className="bg-white/20 backdrop-blur rounded-2xl p-3 mb-4 animate-slide-up text-center">
+        <div className="bg-white/20 backdrop-blur rounded-2xl p-3 mb-2 animate-slide-up text-center">
           <p className="text-white font-bold">🎉 Velkommen tilbage, {state.playerName}!</p>
           <p className="text-white/80 text-sm mt-1">
             {state.dailyStreak > 1
@@ -510,9 +511,9 @@ function HomeScreen({ state, dispatch }: { state: GameState; dispatch: React.Dis
       )}
 
       {/* Level card */}
-      <div className="bg-white rounded-3xl p-5 shadow-2xl mb-4 animate-slide-up">
+      <div className="bg-white rounded-3xl p-4 shadow-2xl mb-3 animate-slide-up">
         <div className="flex items-center gap-4 mb-3">
-          <div className="text-6xl animate-float select-none">{level.emoji}</div>
+          <div className="text-5xl animate-float select-none">{level.emoji}</div>
           <div className="flex-1">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{level.grade}</p>
             <h2 className="text-xl font-black text-gray-800">{level.name}</h2>
@@ -528,14 +529,14 @@ function HomeScreen({ state, dispatch }: { state: GameState; dispatch: React.Dis
       </div>
 
       {/* Real-world context (contextualize principle) */}
-      <div className="bg-white/20 backdrop-blur rounded-2xl p-4 mb-4 text-white text-sm">
+      <div className="bg-white/20 backdrop-blur rounded-2xl p-3 mb-3 text-white text-sm">
         <p className="font-bold text-xs uppercase tracking-wide mb-1 text-white/60 select-none">I den virkelige verden</p>
         <p>{level.realWorldContext}</p>
       </div>
 
       {/* Badges */}
       {state.earnedBadgeIds.length > 0 && (
-        <div className="bg-white/20 backdrop-blur rounded-2xl p-3 mb-4">
+        <div className="bg-white/20 backdrop-blur rounded-2xl p-3 mb-3">
           <p className="text-white font-bold text-xs uppercase mb-2 select-none">🏅 Dine badges</p>
           <div className="flex flex-wrap gap-2">
             {state.earnedBadgeIds.map((id) => {
@@ -551,21 +552,22 @@ function HomeScreen({ state, dispatch }: { state: GameState; dispatch: React.Dis
       )}
 
       {/* Growth mindset quote */}
-      <div className="bg-white/10 rounded-2xl p-3 mb-4 text-white/80 text-xs text-center italic">
+      <div className="bg-white/10 rounded-2xl p-3 mb-2 text-white/80 text-xs text-center italic">
         🧠 "Matematiske evner er ikke medfødte – de bygges op gennem øvelse og vedholdenhed."
+      </div>
       </div>
 
       {/* Buttons */}
-      <div className="flex flex-col gap-3 mt-auto">
+      <div className="flex flex-col gap-3 pt-3 flex-shrink-0">
         <button
           onPointerDown={() => dispatch({ type: "START_LEVEL", levelId: state.currentLevelId })}
-          className="w-full bg-white text-gray-800 font-black py-5 rounded-2xl text-xl shadow-xl active:scale-95 transition-transform select-none"
+          className="w-full bg-white text-gray-800 font-black py-3 rounded-2xl text-base shadow-xl active:scale-95 transition-transform select-none"
         >
           {level.emoji} Spil nu! → {level.name}
         </button>
         <button
           onPointerDown={() => dispatch({ type: "GO_MAP" })}
-          className="w-full bg-white/20 backdrop-blur text-white font-bold py-4 rounded-2xl text-lg active:bg-white/30 transition-colors select-none"
+          className="w-full bg-white/20 backdrop-blur text-white font-bold py-3 rounded-2xl text-sm active:bg-white/30 transition-colors select-none"
         >
           🗺️ Se alle niveauer
         </button>
@@ -576,8 +578,8 @@ function HomeScreen({ state, dispatch }: { state: GameState; dispatch: React.Dis
 
 function LevelMapScreen({ state, dispatch }: { state: GameState; dispatch: React.Dispatch<Action> }) {
   return (
-    <div className="min-h-screen bg-gray-900 p-4 sm:p-6">
-      <div className="flex items-center gap-3 mb-5">
+    <div className="h-dvh bg-gray-900 flex flex-col overflow-hidden">
+      <div className="flex items-center gap-3 p-4 pb-2 flex-shrink-0">
         <button
           onPointerDown={() => dispatch({ type: "GO_HOME" })}
           className="text-white bg-white/10 rounded-xl px-4 py-3 active:bg-white/20 select-none text-lg"
@@ -586,6 +588,7 @@ function LevelMapScreen({ state, dispatch }: { state: GameState; dispatch: React
         </button>
         <h1 className="text-xl font-black text-white select-none">🗺️ Verdenskortet</h1>
       </div>
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {LEVELS.map((level) => {
           const unlocked = state.unlockedLevels.includes(level.id);
@@ -625,6 +628,7 @@ function LevelMapScreen({ state, dispatch }: { state: GameState; dispatch: React
             </button>
           );
         })}
+      </div>
       </div>
     </div>
   );
@@ -701,9 +705,9 @@ function PlayingScreen({ state, dispatch, dungeonMode, onBack }: { state: GameSt
   }
 
   return (
-    <div className={`min-h-screen flex flex-col bg-gradient-to-br ${level.gradient} p-4 sm:p-6`}>
+    <div className={`h-dvh flex flex-col bg-gradient-to-br ${level.gradient} p-3 overflow-hidden`}>
       {/* Top bar */}
-      <div className="flex items-center justify-between mb-3 gap-2">
+      <div className="flex items-center justify-between mb-2 gap-2">
         <button
           onPointerDown={() => dungeonMode && onBack ? onBack() : dispatch({ type: "GO_HOME" })}
           className="bg-white/20 backdrop-blur text-white font-bold px-4 py-3 rounded-xl active:bg-white/30 text-base select-none"
@@ -732,7 +736,7 @@ function PlayingScreen({ state, dispatch, dungeonMode, onBack }: { state: GameSt
       </div>
 
       {/* Round progress */}
-      <div className="mb-3">
+      <div className="mb-2">
         <div className="flex justify-between text-white/70 text-xs mb-1 select-none">
           <span>{level.name}</span>
           <span>{state.roundCorrect}/{level.questionsPerRound}</span>
@@ -747,8 +751,8 @@ function PlayingScreen({ state, dispatch, dungeonMode, onBack }: { state: GameSt
 
       {/* Dungeon monster HP bar */}
       {monster && (
-        <div className="mb-3 bg-black/40 rounded-3xl p-4 flex items-center gap-4">
-          <div className={`text-7xl select-none ${feedback === "correct" ? "animate-shake" : "animate-float"}`}>
+        <div className="mb-2 bg-black/40 rounded-3xl p-3 flex items-center gap-4">
+          <div className={`text-5xl select-none ${feedback === "correct" ? "animate-shake" : "animate-float"}`}>
             {monster.emoji}
           </div>
           <div className="flex-1">
@@ -764,7 +768,7 @@ function PlayingScreen({ state, dispatch, dungeonMode, onBack }: { state: GameSt
 
       {/* Problem card */}
       <div
-        className={`bg-white rounded-3xl p-5 shadow-2xl mb-4 flex-1 flex flex-col ${level.cardBg} ${
+        className={`bg-white rounded-3xl p-4 shadow-2xl mb-3 flex-1 min-h-0 flex flex-col overflow-y-auto ${level.cardBg} ${
           feedback === "correct"
             ? "ring-4 ring-green-400 animate-bounce-in"
             : state.wrongOptions.length > 0
@@ -868,7 +872,7 @@ function PlayingScreen({ state, dispatch, dungeonMode, onBack }: { state: GameSt
                   key={i}
                   disabled={os === "wrong" || os === "correct"}
                   onPointerDown={() => { if (os === "default") dispatch({ type: "ANSWER", option: optStr }); }}
-                  className={`py-6 rounded-2xl text-2xl sm:text-3xl font-black transition-all select-none ${optionClass(optStr)}`}
+                  className={`py-4 rounded-2xl text-2xl sm:text-3xl font-black transition-all select-none ${optionClass(optStr)}`}
                 >
                   {os === "wrong" ? "✗ " : ""}{optStr}
                 </button>
@@ -894,7 +898,7 @@ function PlayingScreen({ state, dispatch, dungeonMode, onBack }: { state: GameSt
           <Confetti />
           <button
             onPointerDown={() => dispatch({ type: "NEXT_QUESTION" })}
-            className="w-full bg-white text-gray-800 font-black py-5 rounded-2xl text-xl shadow-xl active:scale-95 transition-transform animate-bounce-in select-none"
+            className="w-full bg-white text-gray-800 font-black py-4 rounded-2xl text-xl shadow-xl active:scale-95 transition-transform animate-bounce-in select-none"
           >
             Næste spørgsmål ➡️
           </button>
@@ -920,21 +924,21 @@ function LevelUpScreen({ state, dispatch, dungeonMode, onBack }: { state: GameSt
     : "Fejl er en del af læringen – du er stærkere nu! 🌱";
 
   return (
-    <div className={`min-h-screen flex flex-col items-center justify-center bg-gradient-to-br ${level.gradient} p-6`}>
+    <div className={`h-dvh flex flex-col items-center bg-gradient-to-br ${level.gradient} p-4 overflow-y-auto`}>
       <Confetti />
-      <div className="text-center animate-bounce-in mb-4">
-        <div className="text-8xl mb-3 animate-star-spin select-none">{level.emoji}</div>
-        <h1 className="text-4xl font-black text-white drop-shadow-lg">Niveau gennemført! 🎉</h1>
-        <p className="text-lg text-white/90 font-bold mt-1 select-none">{level.name}</p>
+      <div className="text-center animate-bounce-in mb-3">
+        <div className="text-6xl mb-2 animate-star-spin select-none">{level.emoji}</div>
+        <h1 className="text-2xl font-black text-white drop-shadow-lg">Niveau gennemført! 🎉</h1>
+        <p className="text-sm text-white/90 font-bold mt-0.5 select-none">{level.name}</p>
       </div>
 
-      <div className="bg-white rounded-3xl p-5 shadow-2xl mb-4 w-full max-w-sm animate-slide-up">
+      <div className="bg-white rounded-3xl p-4 shadow-2xl mb-3 w-full max-w-sm animate-slide-up">
         {/* Accuracy + self-efficacy message */}
         <div className="text-center mb-4">
-          <div className="text-5xl mb-2 select-none">
+          <div className="text-4xl mb-1 select-none">
             {accuracy === 100 ? "🏆" : accuracy >= 80 ? "⭐" : accuracy >= 60 ? "📚" : "🌱"}
           </div>
-          <div className={`text-4xl font-black mb-1 ${accuracy >= 80 ? "text-green-500" : accuracy >= 60 ? "text-amber-500" : "text-blue-500"}`}>
+          <div className={`text-3xl font-black mb-1 ${accuracy >= 80 ? "text-green-500" : accuracy >= 60 ? "text-amber-500" : "text-blue-500"}`}>
             {accuracy}%
           </div>
           <p className="text-gray-500 text-sm">nøjagtighed</p>
@@ -972,7 +976,7 @@ function LevelUpScreen({ state, dispatch, dungeonMode, onBack }: { state: GameSt
       </div>
 
       {/* Distributed practice nudge */}
-      <div className="bg-white/20 backdrop-blur rounded-2xl p-3 mb-4 w-full max-w-sm text-center">
+      <div className="bg-white/20 backdrop-blur rounded-2xl p-3 mb-3 w-full max-w-sm text-center">
         <p className="text-white text-sm font-medium">
           📅 Kom tilbage <strong>i morgen</strong> for at fortsætte din {state.dailyStreak + 1}-dages stribe!
         </p>
@@ -981,7 +985,7 @@ function LevelUpScreen({ state, dispatch, dungeonMode, onBack }: { state: GameSt
 
       {/* Unlocked next level card */}
       {nextLevel && state.unlockedLevels.includes(nextLevel.id) && (
-        <div className={`bg-gradient-to-r ${nextLevel.gradient} rounded-2xl p-4 mb-4 w-full max-w-sm shadow-lg animate-slide-up`}>
+        <div className={`bg-gradient-to-r ${nextLevel.gradient} rounded-2xl p-4 mb-3 w-full max-w-sm shadow-lg animate-slide-up`}>
           <p className="text-white text-xs font-semibold mb-1 select-none">🔓 Nyt niveau låst op!</p>
           <div className="flex items-center gap-3">
             <span className="text-4xl select-none">{nextLevel.emoji}</span>
@@ -1089,7 +1093,7 @@ export default function MathGame({
 
   if (!hydrated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-400 to-purple-500">
+      <div className="h-dvh flex items-center justify-center bg-gradient-to-br from-indigo-400 to-purple-500 overflow-hidden">
         <div className="text-white text-6xl animate-bounce select-none">🧮</div>
       </div>
     );

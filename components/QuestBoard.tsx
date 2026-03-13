@@ -139,7 +139,7 @@ export default function QuestBoard({ profile, onBack, onEnterCoop }: Props) {
   const othersQuests = quests.filter((q) => q.authorId !== profile.id);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-amber-950/30 to-slate-900 flex flex-col">
+    <div className="h-dvh bg-gradient-to-b from-slate-900 via-amber-950/30 to-slate-900 flex flex-col overflow-hidden">
 
       {/* Header */}
       <div className="flex items-center gap-4 px-5 pt-6 pb-4">
@@ -184,7 +184,7 @@ export default function QuestBoard({ profile, onBack, onEnterCoop }: Props) {
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 pb-6">
+      <div className="flex-1 min-h-0 overflow-y-auto px-5 pb-6">
 
         {/* Create quest modal */}
         {showCreateQuest && (
