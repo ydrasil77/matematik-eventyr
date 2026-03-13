@@ -3,16 +3,18 @@ import { useState, useEffect } from "react";
 import ProfileScreen from "@/components/ProfileScreen";
 import CityMap from "@/components/CityMap";
 import MathGame from "@/components/MathGame";
+import SubjectGame from "@/components/SubjectGame";
 import HeroPanel from "@/components/HeroPanel";
 import QuestBoard from "@/components/QuestBoard";
 import type { Profile, MasteryTrackId } from "@/lib/types";
 import type { HeroClass } from "@/lib/types";
+import type { SubjectId } from "@/lib/subjectData";
 import { normaliseProfile, levelFromXP } from "@/lib/types";
 import { ACHIEVEMENTS, getEarnedTitle, checkNewAchievements } from "@/lib/achievements";
 import { LEVELS } from "@/lib/gameData";
 import { getQuestsForToday, MESTRINGS_STIER } from "@/lib/items";
 
-type AppView = "profiles" | "city" | "math-dungeon" | "hero-panel" | "quest-board";
+type AppView = "profiles" | "city" | "math-dungeon" | "subject-dungeon" | "hero-panel" | "quest-board";
 
 // Map level type → mastery track id
 const TYPE_TO_TRACK: Partial<Record<string, MasteryTrackId>> = {
@@ -52,6 +54,8 @@ export default function Page() {
   const [newAchievements, setNewAchievements] = useState<typeof ACHIEVEMENTS>([]);
   const [hydrated, setHydrated] = useState(false);
   const [dungeonStartFloor, setDungeonStartFloor] = useState(1);
+  const [activeSubjectId, setActiveSubjectId] = useState<SubjectId | null>(null);
+  const [subjectStartFloor, setSubjectStartFloor] = useState(1);
 
   useEffect(() => {
     fetch("/api/profiles")
@@ -197,6 +201,10 @@ export default function Page() {
     if (id === "math") {
       setDungeonStartFloor(floor);
       setView("math-dungeon");
+    } else {
+      setActiveSubjectId(id as SubjectId);
+      setSubjectStartFloor(floor);
+      setView("subject-dungeon");
     }
   };
 
@@ -230,6 +238,35 @@ export default function Page() {
           onHeroPanel={() => setView("hero-panel")}
           onSwitchProfile={() => { setActiveProfile(null); setView("profiles"); }}
           onQuestBoard={() => setView("quest-board")}
+        />
+      )}
+
+      {view === "subject-dungeon" && activeProfile && activeSubjectId && (
+        <SubjectGame
+          subjectId={activeSubjectId}
+          startFloor={subjectStartFloor}
+          playerName={activeProfile.name}
+          onFloorCleared={(floor, correct, attempts) => {
+            if (!activeProfile) return;
+            const xp = floor * 30;
+            const gold = floor * 5;
+            const newXP = activeProfile.mathXP + xp;
+            const updated: Profile = {
+              ...activeProfile,
+              mathXP: newXP,
+              level: levelFromXP(newXP),
+              gold: (activeProfile.gold ?? 0) + gold,
+              subjectFloors: {
+                ...activeProfile.subjectFloors,
+                [activeSubjectId]: Math.max(
+                  activeProfile.subjectFloors?.[activeSubjectId] ?? 1,
+                  floor + 1
+                ),
+              },
+            };
+            updateProfile(updated);
+          }}
+          onBack={() => setView("city")}
         />
       )}
 

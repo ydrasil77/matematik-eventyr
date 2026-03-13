@@ -29,6 +29,7 @@ export interface Profile {
   mathXP: number;
   gold: number;
   mathDungeonFloor: number;
+  subjectFloors: Partial<Record<string, number>>;
 
   // Titles & mounts
   mountId: string;
@@ -70,6 +71,7 @@ export function normaliseProfile(p: Partial<Profile> & { id: string; name: strin
     mathXP: 0,
     gold: 0,
     mathDungeonFloor: 1,
+    subjectFloors: {},
     avatar: "🧙",
     heroClass: "kriger",
     mountId: "horse",

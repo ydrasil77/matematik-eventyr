@@ -19,11 +19,11 @@ const CITY_Y = "46%";
 
 const DUNGEON_NODES: DungeonNode[] = [
   { id: "math",     name: "Matematikens Fæstning", emoji: "🧮", x: "50%",  y: "80%",  available: true,  desc: "Tal, regning og algebra" },
-  { id: "reading",  name: "Bogstavernes Tårn",     emoji: "📖", x: "12%",  y: "42%",  available: false, desc: "Læsning – kommer snart!" },
-  { id: "history",  name: "Historiens Ruiner",     emoji: "🏛️", x: "88%",  y: "32%",  available: false, desc: "Historie – kommer snart!" },
-  { id: "physics",  name: "Fysikkens Fyr",         emoji: "⚡", x: "82%",  y: "62%",  available: false, desc: "Fysik – kommer snart!"   },
-  { id: "biology",  name: "Biologiens Skov",       emoji: "🌿", x: "18%",  y: "68%",  available: false, desc: "Biologi – kommer snart!" },
-  { id: "language", name: "Sprogenes Portal",      emoji: "🌍", x: "50%",  y: "14%",  available: false, desc: "Sprog – kommer snart!"   },
+  { id: "reading",  name: "Bogstavernes Tårn",  emoji: "📖", x: "12%",  y: "42%",  available: true, desc: "Bogstaver & læsning" },
+  { id: "history",  name: "Historiens Ruiner",  emoji: "🏛️", x: "88%",  y: "32%",  available: true, desc: "Danmarks & verdens historie" },
+  { id: "physics",  name: "Fysikkens Fyr",      emoji: "⚡", x: "82%",  y: "62%",  available: true, desc: "Fysik & natur" },
+  { id: "biology",  name: "Biologiens Skov",    emoji: "🌿", x: "18%",  y: "68%",  available: true, desc: "Dyr, planter & kroppen" },
+  { id: "language", name: "Sprogenes Portal",   emoji: "🌍", x: "50%",  y: "14%",  available: true, desc: "Engelsk & sprog" },
 ];
 
 const TREE_DECO = [
@@ -57,8 +57,7 @@ interface Props {
 }
 
 export default function CityMap({ profile, onEnterDungeon, onHeroPanel, onSwitchProfile, onQuestBoard }: Props) {
-  const [tooltip, setTooltip] = useState<string | null>(null);
-  const [showFloorPicker, setShowFloorPicker] = useState(false);
+  const [pickerNode, setPickerNode] = useState<DungeonNode | null>(null);
   const { speak } = useTTS();
   const title = getEarnedTitle(profile.mathDungeonFloor);
   const mount = MOUNTS.find((m) => m.id === profile.mountId) ?? MOUNTS[0];
@@ -68,14 +67,8 @@ export default function CityMap({ profile, onEnterDungeon, onHeroPanel, onSwitch
   const dailyTotal = (profile.dailyQuestIds ?? []).length;
 
   const handleDungeon = (node: DungeonNode) => {
-    if (node.available) {
-      speak(`Vælg hvilken etage du vil kæmpe på!`);
-      setShowFloorPicker(true);
-    } else {
-      speak(`${node.name} er endnu ikke tilgængelig. Kom snart!`);
-      setTooltip(node.id);
-      setTimeout(() => setTooltip(null), 2200);
-    }
+    speak(`${node.name}! Vælg hvilken etage du vil kæmpe på!`);
+    setPickerNode(node);
   };
 
   return (
@@ -157,43 +150,25 @@ export default function CityMap({ profile, onEnterDungeon, onHeroPanel, onSwitch
             style={{ left: node.x, top: node.y, transform: "translate(-50%, -50%)" }}>
             <button onPointerDown={() => handleDungeon(node)}
               className="flex flex-col items-center group transition-transform active:scale-90 select-none">
-              <div className={`relative rounded-3xl p-4 shadow-2xl border-2 ${
-                node.available
-                  ? "bg-gradient-to-b from-amber-700 to-amber-900 border-yellow-400 shadow-yellow-600/50"
-                  : "bg-gray-900/80 border-gray-700"
-              }`}>
-                {node.available && (
-                  <div className="absolute inset-0 rounded-3xl bg-yellow-400/15 animate-pulse" />
-                )}
-                <div className={`text-5xl select-none ${node.available ? "" : "grayscale opacity-50"}`}>
+              <div className="relative rounded-3xl p-4 shadow-2xl border-2 bg-gradient-to-b from-amber-700 to-amber-900 border-yellow-400 shadow-yellow-600/50">
+                <div className="absolute inset-0 rounded-3xl bg-yellow-400/15 animate-pulse" />
+                <div className="text-5xl select-none">
                   {node.emoji}
                 </div>
-                {/* Math floor indicator */}
-                {node.id === "math" && (
+                {node.id === "math" ? (
                   <div className="absolute -top-2 -right-2 bg-purple-600 text-white text-xs font-black rounded-full w-7 h-7 flex items-center justify-center border-2 border-white">
                     {maxFloor}
                   </div>
-                )}
-                {!node.available && (
-                  <div className="absolute inset-0 flex items-center justify-center rounded-3xl">
-                    <span className="text-2xl select-none opacity-60">🔒</span>
+                ) : (
+                  <div className="absolute -top-2 -right-2 bg-slate-700 text-white text-xs font-black rounded-full w-7 h-7 flex items-center justify-center border-2 border-white">
+                    {profile.subjectFloors?.[node.id] ?? 1}
                   </div>
                 )}
               </div>
-              <div className={`mt-2 rounded-xl px-3 py-1 text-xs font-bold max-w-[100px] text-center leading-tight ${
-                node.available ? "bg-yellow-400/90 text-black" : "bg-black/60 text-gray-400"
-              }`}>
+              <div className="mt-2 rounded-xl px-3 py-1 text-xs font-bold max-w-[100px] text-center leading-tight bg-yellow-400/90 text-black">
                 {node.name.split(" ").slice(0, 2).join(" ")}
               </div>
             </button>
-
-            {/* Tooltip for locked */}
-            {tooltip === node.id && (
-              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-white rounded-2xl px-4 py-3 shadow-xl z-20 w-40 text-center animate-bounce-in">
-                <p className="font-black text-gray-800 text-sm">{node.name}</p>
-                <p className="text-gray-500 text-xs mt-1">🔜 Kommer snart!</p>
-              </div>
-            )}
           </div>
         ))}
 
@@ -210,7 +185,7 @@ export default function CityMap({ profile, onEnterDungeon, onHeroPanel, onSwitch
       {/* ── BOTTOM BAR ── */}
       <div className="flex gap-3 px-4 py-3 bg-black/40 border-t border-white/10">
         <button
-          onPointerDown={() => setShowFloorPicker(true)}
+          onPointerDown={() => setPickerNode(DUNGEON_NODES.find((n) => n.id === "math") ?? DUNGEON_NODES[0])}
           className="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-black py-5 rounded-2xl text-xl shadow-xl active:scale-95 transition-transform select-none"
         >
           🧮 Ind i Dungeon! ⚔️
@@ -234,45 +209,57 @@ export default function CityMap({ profile, onEnterDungeon, onHeroPanel, onSwitch
       </div>
 
       {/* ── FLOOR PICKER MODAL ── */}
-      {showFloorPicker && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm"
-          onPointerDown={(e) => { if (e.target === e.currentTarget) setShowFloorPicker(false); }}>
-          <div className="bg-slate-900 rounded-t-3xl w-full max-w-lg p-5 pb-8 animate-slide-up">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-white font-black text-2xl">🧮 Vælg etage</h2>
-              <button onPointerDown={() => setShowFloorPicker(false)}
-                className="text-white/50 text-3xl active:text-white select-none">✕</button>
-            </div>
-            <p className="text-white/50 text-sm mb-4">
-              Du har nået etage {maxFloor}. Vælg hvilken etage du vil kæmpe på:
-            </p>
-            <div className="grid grid-cols-4 gap-2 max-h-72 overflow-y-auto pr-1">
-              {Array.from({ length: 20 }, (_, i) => i + 1).map((floor) => {
-                const monster = ETAGE_MONSTER[floor] ?? { emoji: "👹", name: "Uhyre" };
-                const isMax = floor === maxFloor;
-                return (
-                  <button
-                    key={floor}
-                    onPointerDown={() => {
-                      setShowFloorPicker(false);
-                      onEnterDungeon("math", floor);
-                    }}
-                    className={`flex flex-col items-center p-2 rounded-2xl text-center transition-all active:scale-95 select-none ${
-                      isMax
-                        ? "bg-yellow-400/20 border-2 border-yellow-400 ring-2 ring-yellow-400/40"
-                        : "bg-white/10 active:bg-white/20 border border-white/10"
-                    }`}
-                  >
-                    <span className="text-2xl leading-none">{monster.emoji}</span>
-                    <span className="text-white font-black text-sm mt-1">E{floor}</span>
-                    {isMax && <span className="text-yellow-400 text-xs font-bold">Max</span>}
-                  </button>
-                );
-              })}
+      {pickerNode && (() => {
+        const isMath = pickerNode.id === "math";
+        const totalFloors = isMath ? 20 : 10;
+        const nodeMax = isMath
+          ? maxFloor
+          : (profile.subjectFloors?.[pickerNode.id] ?? 1);
+        return (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm"
+            onPointerDown={(e) => { if (e.target === e.currentTarget) setPickerNode(null); }}>
+            <div className="bg-slate-900 rounded-t-3xl w-full max-w-lg p-5 pb-8 animate-slide-up">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-white font-black text-2xl">{pickerNode.emoji} {pickerNode.name}</h2>
+                <button onPointerDown={() => setPickerNode(null)}
+                  className="text-white/50 text-3xl active:text-white select-none">✕</button>
+              </div>
+              <p className="text-white/50 text-sm mb-4">
+                Du har nået etage {nodeMax}. Vælg hvilken etage du vil kæmpe på:
+              </p>
+              <div className="grid grid-cols-4 gap-2 max-h-72 overflow-y-auto pr-1">
+                {Array.from({ length: totalFloors }, (_, i) => i + 1).map((floor) => {
+                  const monster = isMath ? (ETAGE_MONSTER[floor] ?? { emoji: "👹", name: "Uhyre" }) : { emoji: pickerNode.emoji, name: `Etage ${floor}` };
+                  const isMax = floor === nodeMax;
+                  const isLocked = floor > nodeMax;
+                  return (
+                    <button
+                      key={floor}
+                      disabled={isLocked}
+                      onPointerDown={() => {
+                        if (isLocked) return;
+                        setPickerNode(null);
+                        onEnterDungeon(pickerNode.id, floor);
+                      }}
+                      className={`flex flex-col items-center p-2 rounded-2xl text-center transition-all active:scale-95 select-none ${
+                        isLocked
+                          ? "bg-white/5 border border-white/5 opacity-30 cursor-not-allowed"
+                          : isMax
+                          ? "bg-yellow-400/20 border-2 border-yellow-400 ring-2 ring-yellow-400/40"
+                          : "bg-white/10 active:bg-white/20 border border-white/10"
+                      }`}
+                    >
+                      <span className="text-2xl leading-none">{isLocked ? "🔒" : monster.emoji}</span>
+                      <span className="text-white font-black text-sm mt-1">E{floor}</span>
+                      {isMax && !isLocked && <span className="text-yellow-400 text-xs font-bold">Max</span>}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
