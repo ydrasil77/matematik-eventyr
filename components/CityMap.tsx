@@ -58,6 +58,8 @@ interface Props {
 
 export default function CityMap({ profile, onEnterDungeon, onHeroPanel, onSwitchProfile, onQuestBoard }: Props) {
   const [pickerNode, setPickerNode] = useState<DungeonNode | null>(null);
+  const [heroPos, setHeroPos] = useState({ left: "50%", top: "60%" });
+  const [traveling, setTraveling] = useState(false);
   const { speak } = useTTS();
   const title = getEarnedTitle(profile.mathDungeonFloor);
   const mount = MOUNTS.find((m) => m.id === profile.mountId) ?? MOUNTS[0];
@@ -69,6 +71,19 @@ export default function CityMap({ profile, onEnterDungeon, onHeroPanel, onSwitch
   const handleDungeon = (node: DungeonNode) => {
     speak(`${node.name}! Vælg hvilken etage du vil kæmpe på!`);
     setPickerNode(node);
+  };
+
+  const travelTo = (nodeId: string, floor: number) => {
+    const node = DUNGEON_NODES.find((n) => n.id === nodeId);
+    setPickerNode(null);
+    if (!node) { onEnterDungeon(nodeId, floor); return; }
+    setTraveling(true);
+    setHeroPos({ left: node.x, top: node.y });
+    setTimeout(() => {
+      setHeroPos({ left: "50%", top: "60%" });
+      setTraveling(false);
+      onEnterDungeon(nodeId, floor);
+    }, 1100);
   };
 
   return (
@@ -173,10 +188,15 @@ export default function CityMap({ profile, onEnterDungeon, onHeroPanel, onSwitch
         ))}
 
         {/* Hero token on map */}
-        <div className="absolute z-10 animate-bounce-in"
-          style={{ left: "50%", top: "60%", transform: "translate(-50%, -50%)" }}>
+        <div className="absolute z-10"
+          style={{
+            left: heroPos.left,
+            top: heroPos.top,
+            transform: "translate(-50%, -50%)",
+            transition: traveling ? "left 1s ease-in-out, top 1s ease-in-out" : "none",
+          }}>
           <div className="flex flex-col items-center">
-            <div className="text-4xl select-none drop-shadow-lg">{profile.avatar}</div>
+            <div className={`text-4xl select-none drop-shadow-lg ${traveling ? "animate-bounce" : ""}`}>{profile.avatar}</div>
             <div className="text-2xl select-none -mt-1">{mount.emoji}</div>
           </div>
         </div>
@@ -238,8 +258,7 @@ export default function CityMap({ profile, onEnterDungeon, onHeroPanel, onSwitch
                       disabled={isLocked}
                       onPointerDown={() => {
                         if (isLocked) return;
-                        setPickerNode(null);
-                        onEnterDungeon(pickerNode.id, floor);
+                        travelTo(pickerNode.id, floor);
                       }}
                       className={`flex flex-col items-center p-2 rounded-2xl text-center transition-all active:scale-95 select-none ${
                         isLocked
